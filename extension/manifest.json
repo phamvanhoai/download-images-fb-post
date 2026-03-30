@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "FB Post Image Downloader",
+  "version": "1.0.0",
+  "description": "Download all images from the currently open Facebook post.",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.facebook.com/*",
+    "https://*.fbcdn.net/*",
+    "https://*.fbsbx.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FB Post Image Downloader"
+  }
+}

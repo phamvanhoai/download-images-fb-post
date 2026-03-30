@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FB Post Image Downloader</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app">
+      <h1>FB Post Image Downloader</h1>
+      <p class="hint">Paste a Facebook post link below, set a file name prefix if you want, then click download.</p>
+      <label class="field-label" for="postUrl">Facebook post link</label>
+      <textarea id="postUrl" class="url-input" placeholder="https://www.facebook.com/..." rows="4"></textarea>
+      <label class="field-label" for="filePrefix">File name prefix</label>
+      <input id="filePrefix" class="url-input" type="text" value="facebook_post" placeholder="facebook_post">
+      <button id="downloadButton" type="button">Download Images</button>
+      <p id="status" class="status">Ready.</p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

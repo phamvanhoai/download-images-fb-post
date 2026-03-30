@@ -1,0 +1,8 @@
+.venv/
+.playwright-facebook-profile/
+downloads/
+__pycache__/
+*.py[cod]
+*.log
+.DS_Store
+Thumbs.db
