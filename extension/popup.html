@@ -9,9 +9,11 @@
   <body>
     <main class="app">
       <h1>FB Post Image Downloader</h1>
-      <p class="hint">Paste a Facebook post link below, set a file name prefix if you want, then click download.</p>
+      <p class="hint">Paste a Facebook post link below, set a folder and file name prefix if you want, then click download.</p>
       <label class="field-label" for="postUrl">Facebook post link</label>
       <textarea id="postUrl" class="url-input" placeholder="https://www.facebook.com/..." rows="4"></textarea>
+      <label class="field-label" for="saveFolder">Save folder in Downloads</label>
+      <input id="saveFolder" class="url-input" type="text" value="facebook-post-images" placeholder="facebook-post-images">
       <label class="field-label" for="filePrefix">File name prefix</label>
       <input id="filePrefix" class="url-input" type="text" value="facebook_post" placeholder="facebook_post">
       <button id="downloadButton" type="button">Download Images</button>

@@ -12,11 +12,20 @@ function sleep(ms) {
 }
 
 function sanitizeName(value) {
-  return value.replace(/[<>:"/\\|?*]+/g, "_").trim() || "download";
+  return value.replace(/[<>:"|?*]+/g, "_").trim() || "download";
 }
 
 function normalizeFilePrefix(value) {
-  return sanitizeName((value || "").trim() || "facebook_post");
+  return sanitizeName((value || "").trim() || "facebook_post").replace(/[\\/]+/g, "_");
+}
+
+function normalizeSaveFolder(value) {
+  const raw = (value || "").trim() || "facebook-post-images";
+  return raw
+    .split(/[\\/]+/)
+    .map((segment) => sanitizeName(segment))
+    .filter(Boolean)
+    .join("/") || "facebook-post-images";
 }
 
 function getImageFingerprint(imageUrl) {
@@ -413,9 +422,10 @@ async function collectImagesFromFacebookPost(tabId, postUrl) {
   return collectImagesFromFallback(tabId, postUrl);
 }
 
-async function queueDownloads(imageUrls, filePrefix) {
+async function queueDownloads(imageUrls, filePrefix, saveFolder) {
   let count = 0;
   const queuedKeys = new Set();
+  const normalizedFolder = normalizeSaveFolder(saveFolder);
 
   for (let index = 0; index < imageUrls.length; index += 1) {
     const imageUrl = imageUrls[index];
@@ -427,7 +437,7 @@ async function queueDownloads(imageUrls, filePrefix) {
 
     await chrome.downloads.download({
       url: imageUrl,
-      filename: `facebook-post-images/${buildFilename(count + 1, imageUrl, filePrefix)}`,
+      filename: `${normalizedFolder}/${buildFilename(count + 1, imageUrl, filePrefix)}`,
       saveAs: false
     });
     count += 1;
@@ -436,7 +446,7 @@ async function queueDownloads(imageUrls, filePrefix) {
   return count;
 }
 
-async function downloadPostImagesByUrl(postUrl, filePrefix) {
+async function downloadPostImagesByUrl(postUrl, filePrefix, saveFolder) {
   const workerTab = await chrome.tabs.create({ url: postUrl, active: false });
   try {
     await waitForTabReady(workerTab.id);
@@ -444,7 +454,7 @@ async function downloadPostImagesByUrl(postUrl, filePrefix) {
     if (imageUrls.length === 0) {
       throw new Error("Could not find images in this post.");
     }
-    const count = await queueDownloads(imageUrls, filePrefix);
+    const count = await queueDownloads(imageUrls, filePrefix, saveFolder);
     return { ok: true, count };
   } finally {
     await chrome.tabs.remove(workerTab.id);
@@ -455,7 +465,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "download-post-images-by-url") {
     (async () => {
       try {
-        const response = await downloadPostImagesByUrl(message.postUrl, message.filePrefix);
+        const response = await downloadPostImagesByUrl(message.postUrl, message.filePrefix, message.saveFolder);
         sendResponse(response);
       } catch (error) {
         sendResponse({ ok: false, error: error.message || String(error) });
@@ -472,7 +482,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           throw new Error("Could not find images in this post.");
         }
 
-        const count = await queueDownloads(imageUrls, message.filePrefix);
+        const count = await queueDownloads(imageUrls, message.filePrefix, message.saveFolder);
         sendResponse({ ok: true, count });
       } catch (error) {
         sendResponse({ ok: false, error: error.message || String(error) });
