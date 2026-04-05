@@ -38,6 +38,31 @@ function getImageFingerprint(imageUrl) {
   }
 }
 
+function isCandidateFacebookImage(imageUrl, width, height, alt = "") {
+  if (!imageUrl) {
+    return false;
+  }
+
+  if (!imageUrl.includes("fbcdn.net") && !imageUrl.includes("scontent")) {
+    return false;
+  }
+
+  const normalizedAlt = (alt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (normalizedAlt.includes("profile picture") || normalizedAlt.includes("avatar")) {
+    return false;
+  }
+
+  const imageWidth = width || 0;
+  const imageHeight = height || 0;
+  const area = imageWidth * imageHeight;
+
+  return imageWidth >= 120 && imageHeight >= 120 && area >= 20000;
+}
+
 function buildFilename(index, imageUrl, filePrefix) {
   const prefix = normalizeFilePrefix(filePrefix);
   try {
@@ -96,21 +121,18 @@ async function collectImagesViaViewer(tabId) {
 
       const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-      const isLargeFacebookImage = (src, width, height, alt) => {
+      const isViewerCandidate = (src, width, height, alt) => {
         if (!src) {
           return false;
         }
         if (!src.includes("fbcdn.net") && !src.includes("scontent")) {
           return false;
         }
-        if (width < 350 || height < 350) {
-          return false;
-        }
         const altText = normalizeLabel(alt);
         if (altText.includes("profile picture") || altText.includes("avatar")) {
           return false;
         }
-        return true;
+        return width >= 120 && height >= 120 && width * height >= 20000;
       };
 
       const getViewerState = () => {
@@ -128,7 +150,7 @@ async function collectImagesViaViewer(tabId) {
           const alt = img.alt || "";
           const area = width * height;
 
-          if (!isLargeFacebookImage(src, width, height, alt)) {
+          if (!isViewerCandidate(src, width, height, alt)) {
             continue;
           }
 
@@ -323,6 +345,16 @@ async function collectImagesFromFallback(tabId, postUrl) {
           return url;
         };
 
+        const isCandidateFacebookImageLocal = (src, width, height) => {
+          if (!src) {
+            return false;
+          }
+          if (!src.includes("fbcdn.net") && !src.includes("scontent")) {
+            return false;
+          }
+          return width >= 120 && height >= 120 && width * height >= 20000;
+        };
+
         const candidates = [];
         for (const img of document.querySelectorAll("img")) {
           const src = normalize(
@@ -334,7 +366,7 @@ async function collectImagesFromFallback(tabId, postUrl) {
           );
           const width = img.naturalWidth || 0;
           const height = img.naturalHeight || 0;
-          if ((!src.includes("fbcdn.net") && !src.includes("scontent")) || width < 400) {
+          if (!isCandidateFacebookImageLocal(src, width, height)) {
             continue;
           }
           candidates.push({ src, area: width * height });
@@ -370,6 +402,23 @@ async function collectImagesFromFallback(tabId, postUrl) {
       return url;
     };
 
+    const isCandidateFacebookImageLocal = (src, width, height, alt) => {
+      if (!src) {
+        return false;
+      }
+      if (!src.includes("fbcdn.net") && !src.includes("scontent")) {
+        return false;
+      }
+      const normalizedAlt = (alt || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      if (normalizedAlt.includes("profile picture") || normalizedAlt.includes("avatar")) {
+        return false;
+      }
+      return width >= 120 && height >= 120 && width * height >= 20000;
+    };
+
     const images = [];
     const seen = new Set();
 
@@ -383,12 +432,9 @@ async function collectImagesFromFallback(tabId, postUrl) {
       );
       const width = img.naturalWidth || 0;
       const height = img.naturalHeight || 0;
-      const alt = (img.alt || "").toLowerCase();
+      const alt = img.alt || "";
 
-      if ((!src.includes("fbcdn.net") && !src.includes("scontent")) || width < 250 || height < 250) {
-        continue;
-      }
-      if (alt.includes("profile picture") || alt.includes("avatar")) {
+      if (!isCandidateFacebookImageLocal(src, width, height, alt)) {
         continue;
       }
       const key = src;
